@@ -8,7 +8,7 @@ const char* WIFI_SSID = "OnePlus 11 5G FD58";
 const char* WIFI_PASSWORD = "pranes2007";
 
 // Replace 192.168.X.X with your laptop's IPv4 address from Step 1!
-const char* SERVER_URL = "http://10.47.225.143:3000/api/location"; 
+const char* SERVER_URL = "http://172.16.40.200:3000/api/location"; 
 // --------------------------------------
 
 // LoRa Pins

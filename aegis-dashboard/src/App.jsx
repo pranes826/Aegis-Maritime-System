@@ -6,9 +6,9 @@ const BOUNDARY_POINTS = [
 ];
 
 export default function App() {
-  const [boatPosition, setBoatPosition] = useState([9.30, 80.30]);
-  const [distance, setDistance] = useState(25.0);
-  const [zone, setZone] = useState("SAFE");
+  const [boatPosition, setBoatPosition] = useState([0, 0]);
+  const [distance, setDistance] = useState(0);
+  const [zone, setZone] = useState("UNKNOWN");
   const [status, setStatus] = useState("Waiting for data...");
 
   useEffect(() => {
