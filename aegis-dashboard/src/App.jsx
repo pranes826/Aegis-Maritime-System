@@ -7,81 +7,67 @@ const BOUNDARY_POINTS = [
 
 export default function App() {
   const [boatPosition, setBoatPosition] = useState([9.30, 80.30]);
-  const [distance, setDistance] = useState(25.00);
+  const [distance, setDistance] = useState(25.0);
   const [zone, setZone] = useState("SAFE");
+  const [status, setStatus] = useState("Waiting for data...");
 
-  // Fetch data from backend every 1.5 seconds
   useEffect(() => {
-    const interval = setInterval(async () => {
+    const fetchTelemetry = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/location');
-        if (response.ok) {
-          const data = await response.json();
-          setBoatPosition([data.lat, data.lon]);
-          setDistance(data.distance);
-          setZone(data.zone);
+        const res = await fetch("http://localhost:3000/api/location");
+        if (!res.ok) throw new Error("API error " + res.status);
+        const data = await res.json();
+        if (data?.lat !== undefined && data?.lon !== undefined) {
+          setBoatPosition([Number(data.lat), Number(data.lon)]);
+          setDistance(Number(data.distance ?? 0));
+          setZone(String(data.zone ?? "UNKNOWN"));
+          setStatus("Live");
+        } else {
+          setStatus("Bad payload");
         }
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      } catch (err) {
+        console.error(err);
+        setStatus("Disconnected");
       }
-    }, 1500);
+    };
 
-    return () => clearInterval(interval);
+    fetchTelemetry();
+    const t = setInterval(fetchTelemetry, 1500);
+    return () => clearInterval(t);
   }, []);
 
-  // Dynamic color selection based on the zone
   const getZoneColor = () => {
-    if (zone === 'DANGER') return '#ef4444'; // Red
-    if (zone === 'WARNING') return '#f59e0b'; // Yellow
-    return '#22c55e'; // Green
+    if (zone === "DANGER") return "#ef4444";
+    if (zone === "WARNING") return "#f59e0b";
+    return "#22c55e";
   };
 
   return (
-    <div style={{ 
-      display: 'flex', width: '100vw', height: '100vh', 
-      backgroundColor: '#0a0a0a', color: 'white', margin: 0, padding: 0, overflow: 'hidden',
-      fontFamily: 'system-ui, -apple-system, sans-serif'
+    <div style={{
+      display: "flex", minHeight: "100vh", background: "#0b1226", color: "#fff"
     }}>
-      
-      {/* LEFT SIDEBAR: Status Display */}
-      <div style={{ 
-        width: '380px', minWidth: '380px', padding: '25px', backgroundColor: '#171717', 
-        borderRight: `4px solid ${getZoneColor()}`, 
-        boxShadow: zone === 'DANGER' ? '0 0 30px rgba(239, 68, 68, 0.4)' : 'none', 
-        zIndex: 10, display: 'flex', flexDirection: 'column', transition: 'all 0.3s ease'
+      <aside style={{
+        width: "360px", padding: 20, background: "#111827", borderRight: `4px solid ${getZoneColor()}`
       }}>
-        
-        {/* Header */}
-        <div style={{ borderBottom: '1px solid #333', paddingBottom: '20px', marginBottom: '20px' }}>
-          <h1 style={{ margin: '0 0 5px 0', fontSize: '24px', letterSpacing: '1px' }}>🛡️ AEGIS</h1>
-          <p style={{ margin: 0, color: '#888', fontSize: '14px' }}>Maritime Boundary Monitor</p>
-        </div>
-
-        {/* Status Display */}
-        <div style={{ 
-          backgroundColor: '#262626', padding: '20px', borderRadius: '10px', 
-          border: `1px solid ${getZoneColor()}`, textAlign: 'center', marginBottom: '20px'
+        <h1>AEGIS Dashboard</h1>
+        <p>Status: <strong>{status}</strong></p>
+        <p style={{ color: getZoneColor(), fontWeight: "bold" }}>Zone: {zone}</p>
+        <p>Distance: {distance.toFixed(2)} km</p>
+        <p>Location: {boatPosition[0].toFixed(4)}, {boatPosition[1].toFixed(4)}</p>
+        <pre style={{
+          marginTop: 12, background: "#0f172a", padding: 10, borderRadius: 8, fontSize: 12
         }}>
-          <h2 style={{ margin: '0 0 10px 0', color: '#a3a3a3', fontSize: '14px', textTransform: 'uppercase' }}>Current Status</h2>
-          <h1 style={{ margin: 0, color: getZoneColor(), fontSize: '36px', fontWeight: '900', letterSpacing: '2px' }}>
-            {zone}
-          </h1>
-          <p style={{ margin: '10px 0 0 0', fontSize: '18px', fontWeight: 'bold' }}>
-            Distance to Border: {distance} km
-          </p>
-        </div>
+          {JSON.stringify({ lat: boatPosition[0], lon: boatPosition[1], distance, zone }, null, 2)}
+        </pre>
+      </aside>
 
-      </div>
-
-      {/* RIGHT SIDE: The Map */}
-      <div style={{ flex: 1, height: '100vh', position: 'relative' }}>
-        <MapView 
-          boatPosition={boatPosition} 
-          boundaryPoints={BOUNDARY_POINTS} 
-          boatPath={[boatPosition]} 
+      <main style={{ flex: 1, height: "100vh" }}>
+        <MapView
+          boatPosition={boatPosition}
+          boundaryPoints={BOUNDARY_POINTS}
+          boatPath={[boatPosition]}
         />
-      </div>
-
+      </main>
     </div>
   );
 }
