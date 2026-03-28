@@ -1,45 +1,42 @@
-#include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
-#include <WiFiClient.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
 #include <SPI.h>
 #include <LoRa.h>
 
+// --- UPDATE THESE WITH YOUR DETAILS ---
 const char* WIFI_SSID = "OnePlus 11 5G FD58";
 const char* WIFI_PASSWORD = "pranes2007";
-const char* SERVER_URL = "http://172.16.40.200:3000/api/location"; 
 
-// ESP8266 NodeMCU Pins for LoRa
-#define SS    D8
-#define RST   D0
-#define DIO0  D2
+// Replace 192.168.X.X with your laptop's IPv4 address from Step 1!
+const char* SERVER_URL = "http://10.47.225.143:3000/api/location"; 
+// --------------------------------------
+
+// LoRa Pins
+#define SS    5
+#define RST   14
+#define DIO0  2
 
 void setup() {
   Serial.begin(115200);
 
+  // 1. Connect to WiFi
   Serial.print("Connecting to WiFi");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("\n✅ WiFi Connected!");
-  Serial.print("ESP8266 IP Address: ");
+  Serial.println("\nWiFi Connected!");
+  Serial.print("ESP32 IP Address: ");
   Serial.println(WiFi.localIP());
 
-  // Initialize LoRa
+  // 2. Initialize LoRa
   LoRa.setPins(SS, RST, DIO0);
   if (!LoRa.begin(433E6)) {
-    Serial.println("❌ LoRa init failed. Check wiring!");
+    Serial.println("LoRa init failed. Check wiring!");
     while (1);
   }
-  
-  // Match the Boat's Radio Frequencies!
-  LoRa.setSpreadingFactor(7);
-  LoRa.setSignalBandwidth(125E3);
-  LoRa.setCodingRate4(5);
-  LoRa.setSyncWord(0xF3);
-  
-  Serial.println("📡 LoRa Receiver Ready! Waiting for boat data...");
+  Serial.println("LoRa Receiver Ready! Waiting for boat data...");
 }
 
 void loop() {
@@ -51,9 +48,11 @@ void loop() {
       incoming += (char)LoRa.read();
     }
     
-    Serial.println("\n--- 📡 LORA PACKET RECEIVED ---");
-    Serial.println("Raw Data: " + incoming);
+    Serial.print("Received packet: ");
+    Serial.println(incoming);
+    // Incoming format from boat: BOAT1,9.3000,80.5000,25.00,SAFE
 
+    // 3. Parse the comma-separated data
     int firstComma = incoming.indexOf(',');
     int secondComma = incoming.indexOf(',', firstComma + 1);
     int thirdComma = incoming.indexOf(',', secondComma + 1);
@@ -65,25 +64,27 @@ void loop() {
       String dist = incoming.substring(thirdComma + 1, fourthComma);
       String zone = incoming.substring(fourthComma + 1);
 
+      // 4. Build JSON Payload
       String jsonPayload = "{\"lat\":" + lat + ",\"lon\":" + lon + ",\"distance\":" + dist + ",\"zone\":\"" + zone + "\"}";
       Serial.println("Sending to Backend: " + jsonPayload);
 
+      // 5. Send HTTP POST to Node.js
       if (WiFi.status() == WL_CONNECTED) {
-        WiFiClient client;
         HTTPClient http;
-        http.begin(client, SERVER_URL);
+        http.begin(SERVER_URL);
         http.addHeader("Content-Type", "application/json");
         
         int httpResponseCode = http.POST(jsonPayload);
         
         if (httpResponseCode > 0) {
-          Serial.printf("✅ HTTP Response code: %d\n", httpResponseCode);
+          Serial.printf("HTTP Response code: %d\n", httpResponseCode);
         } else {
-          Serial.printf("⚠️ HTTP Error code: %d\n", httpResponseCode);
+          Serial.printf("HTTP Error code: %d\n", httpResponseCode);
         }
         http.end();
       } else {
-        Serial.println("⚠️ WiFi Disconnected. Reconnecting...");
+        Serial.println("WiFi Disconnected. Reconnecting...");
+        WiFi.reconnect();
       }
     }
   }
