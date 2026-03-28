@@ -1,42 +1,45 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
+import { useState } from "react";
+import MapView from "./components/MapView";
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
+const BOUNDARY_POINTS = [
+  [9.50, 80.30], [9.70, 80.20], [9.95, 80.10], [10.15, 79.95], [10.35, 79.80]
+];
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
+export default function App() {
+  const [boatPosition, setBoatPosition] = useState([9.30, 80.50]);
+  const [boatPath, setBoatPath] = useState([[9.30, 80.50]]);
+  const [zone, setZone] = useState("SAFE");
+  const [distance, setDistance] = useState("25.00");
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
+  return (
+    // The Main Wrapper: Forces full screen, dark mode, and side-by-side flex layout
+    <div style={{ display: 'flex', width: '100vw', height: '100vh', backgroundColor: '#121212', color: 'white', margin: 0, padding: 0, overflow: 'hidden' }}>
+      
+      {/* LEFT SIDE: The Sidebar (Forced to 350px width) */}
+      <div style={{ width: '350px', minWidth: '350px', padding: '20px', backgroundColor: '#1e1e1e', borderRight: '2px solid #333', zIndex: 10, display: 'flex', flexDirection: 'column' }}>
+        <h2 style={{ margin: 0 }}>🛡️ AEGIS Dashboard</h2>
+        <h3 style={{ 
+          color: zone === 'DANGER' ? '#ef4444' : zone === 'WARNING' ? '#f59e0b' : '#22c55e',
+          marginTop: '10px'
+        }}>
+          ZONE: {zone} ({distance}km)
+        </h3>
+        
+        <div style={{ marginTop: '30px', borderTop: '1px solid #444', paddingTop: '20px', flex: 1 }}>
+          <h3 style={{ margin: 0 }}>Live Boat Logs</h3>
+          <p style={{ color: '#888', marginTop: '10px' }}>Waiting for LoRa packets...</p>
+        </div>
+      </div>
 
-.card {
-  padding: 2em;
-}
+      {/* RIGHT SIDE: The Map (Forced to take up all remaining space) */}
+      <div style={{ flex: 1, height: '100vh', position: 'relative' }}>
+        <MapView 
+          boatPosition={boatPosition} 
+          boundaryPoints={BOUNDARY_POINTS} 
+          boatPath={boatPath} 
+        />
+      </div>
 
-.read-the-docs {
-  color: #888;
+    </div>
+  );
 }
