@@ -53,11 +53,11 @@ export default function App() {
         <p>Status: <strong>{status}</strong></p>
         <p style={{ color: getZoneColor(), fontWeight: "bold" }}>Zone: {zone}</p>
         <p>Distance: {distance.toFixed(2)} km</p>
-        <p>Location: {boatPosition[0].toFixed(4)}, {boatPosition[1].toFixed(4)}</p>
+        <p>Location: {status === "Live" ? `${boatPosition[0].toFixed(4)}, ${boatPosition[1].toFixed(4)}` : "No data received"}</p>
         <pre style={{
           marginTop: 12, background: "#0f172a", padding: 10, borderRadius: 8, fontSize: 12
         }}>
-          {JSON.stringify({ lat: boatPosition[0], lon: boatPosition[1], distance, zone }, null, 2)}
+          {status === "Live" ? JSON.stringify({ lat: boatPosition[0], lon: boatPosition[1], distance, zone }, null, 2) : "No data received"}
         </pre>
       </aside>
 
