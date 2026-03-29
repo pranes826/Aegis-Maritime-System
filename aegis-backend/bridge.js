@@ -30,7 +30,7 @@ parser.on('data', async (data) => {
                 };
 
                 // Send it directly to localhost (Bypasses all WiFi and Firewalls!)
-                await axios.post('http://localhost:3000/api/location', payload);
+                await axios.post('http://localhost:5000/api/location', payload);
                 console.log("✅ Successfully bridged packet to local database!");
             }
         } catch (err) {

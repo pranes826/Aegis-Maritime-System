@@ -2,13 +2,20 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = 3000;
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*', methods: ['GET', 'POST'] }
+});
+
+const PORT = 5000;
 
 // ─── 1. CONNECT TO MONGODB ATLAS ─────────────────────────────────────────────
 mongoose.connect(process.env.MONGO_URI)
@@ -27,6 +34,17 @@ const boatSchema = new mongoose.Schema({
 
 const Boat = mongoose.model('Boat', boatSchema);
 
+const alertSchema = new mongoose.Schema({
+  boatId:    { type: String, default: 'BOAT1' },
+  zone:      { type: String },
+  lat:       { type: Number },
+  lon:       { type: Number },
+  timestamp: { type: Date, default: Date.now }
+});
+const AlertEvent = mongoose.model('AlertEvent', alertSchema);
+
+let lastZone = null;
+
 // ─── 3. ESP32 POSTS DATA HERE ─────────────────────────────────────────────────
 app.post('/api/location', async (req, res) => {
   const { boatId, lat, lon, distance, zone } = req.body;
@@ -42,6 +60,18 @@ app.post('/api/location', async (req, res) => {
       });
 
       await newData.save();
+
+      // Real-time push to all connected dashboards
+      io.emit('locationUpdate', newData);
+
+      // Persist zone-change events
+      if (zone && zone !== lastZone) {
+        lastZone = zone;
+        const alert = new AlertEvent({ boatId: boatId || 'BOAT1', zone, lat: parseFloat(lat), lon: parseFloat(lon) });
+        await alert.save();
+        io.emit('alertEvent', alert);
+      }
+
       console.log(`[SAVED TO DB] Lat: ${lat}, Lon: ${lon}, Zone: ${zone}`);
       res.status(201).json({ message: 'Data saved!', data: newData });
 
@@ -82,6 +112,16 @@ app.get('/api/location/history', async (req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+// ─── 6. GET ALERT EVENTS ─────────────────────────────────────────────────────
+app.get('/api/alerts', async (req, res) => {
+  try {
+    const alerts = await AlertEvent.find().sort({ timestamp: -1 }).limit(50);
+    res.json(alerts);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch alerts' });
+  }
+});
+
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
 });
