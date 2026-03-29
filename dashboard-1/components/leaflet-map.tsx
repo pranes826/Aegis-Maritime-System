@@ -17,6 +17,20 @@ interface LeafletMapProps {
 
 // ─── Tamil Nadu Maritime Boundaries ─────────────────────────────────────────
 // Coordinates are [lat, lng]
+
+// Base IMBL coordinates — actual India–Sri Lanka maritime boundary
+const IMBL_PALK_COORDS: [number, number][] = [
+  [10.80, 80.30], [10.60, 80.20], [10.47, 80.12], [10.22, 79.97],
+  [9.95,  79.82], [9.72, 79.67], [9.52, 79.57], [9.35, 79.49],
+  [9.17,  79.43], [9.00, 79.35],
+]
+const IMBL_GULF_COORDS: [number, number][] = [
+  [9.17, 79.43], [9.00, 79.20], [8.83, 78.92], [8.68, 78.62],
+  [8.53, 78.32], [8.38, 78.02], [8.23, 77.72], [8.10, 77.46],
+  [7.95, 77.20], [7.80, 76.95],
+]
+
+// offsetLine is a hoisted function declaration defined below — safe to call here
 const TN_MARITIME_BOUNDARIES = [
   {
     name: "Tamil Nadu Coastline",
@@ -26,96 +40,81 @@ const TN_MARITIME_BOUNDARIES = [
     dashArray: null as string | null,
     description: "Shoreline (Baseline)",
     usedForDistance: false,
+    showInLegend: true,
     coordinates: [
-      [13.47, 80.30], // Pulicat (AP border)
-      [13.08, 80.29], // Chennai
-      [12.62, 80.19], // Mahabalipuram
-      [12.27, 80.08], // Cuddalore approach
-      [11.93, 79.83], // Pondicherry
-      [11.75, 79.77], // Cuddalore
-      [11.50, 79.77],
-      [11.20, 79.80],
-      [10.92, 79.83],
-      [10.76, 79.84], // Nagapattinam
-      [10.30, 79.85], // Point Calimere / Vedaranyam
-      [10.03, 79.78],
-      [9.77,  79.50], // Palk Bay coast
-      [9.50,  79.22],
-      [9.28,  79.31], // Rameswaram / Dhanushkodi
-      [9.14,  79.06],
-      [8.88,  78.53],
-      [8.78,  78.13], // Thoothukudi (Tuticorin)
-      [8.55,  77.90],
-      [8.30,  77.68],
-      [8.08,  77.55], // Kanyakumari
+      [13.47, 80.30], [13.08, 80.29], [12.62, 80.19], [12.27, 80.08],
+      [11.93, 79.83], [11.75, 79.77], [11.50, 79.77], [11.20, 79.80],
+      [10.92, 79.83], [10.76, 79.84], [10.30, 79.85], [10.03, 79.78],
+      [9.77,  79.50], [9.50,  79.22], [9.28,  79.31], [9.14,  79.06],
+      [8.88,  78.53], [8.78,  78.13], [8.55,  77.90], [8.30,  77.68],
+      [8.08,  77.55],
     ] as [number, number][],
   },
   {
-    name: "12 NM Territorial Limit",
+    name: "Warning Zone (25 km)",
     color: "#f59e0b",
-    weight: 3,
+    weight: 2.5,
     opacity: 0.9,
-    dashArray: "8, 5",
-    description: "Territorial Sea (12 Nautical Miles)",
+    dashArray: "10, 6" as string | null,
+    description: "25 km buffer — approach with caution",
     usedForDistance: false,
-    coordinates: [
-      [13.50, 80.52],
-      [13.10, 80.51],
-      [12.63, 80.41],
-      [12.29, 80.30],
-      [11.95, 80.05],
-      [11.77, 79.99],
-      [11.52, 79.99],
-      [11.22, 80.02],
-      [10.94, 80.06],
-      [10.77, 80.07],
-      [10.32, 80.08],
-      [10.05, 80.00],
-      [9.62,  79.65],
-      [9.30,  79.53],
-      [9.09,  79.28],
-      [8.66,  78.32],
-      [8.56,  78.00],
-      [8.36,  77.72],
-      [8.09,  77.33],
-    ] as [number, number][],
+    showInLegend: true,
+    coordinates: offsetLine(IMBL_PALK_COORDS, 25 / 111),
+  },
+  {
+    name: "Warning Zone (25 km)",
+    color: "#f59e0b",
+    weight: 2.5,
+    opacity: 0.9,
+    dashArray: "10, 6" as string | null,
+    description: "25 km buffer — approach with caution",
+    usedForDistance: false,
+    showInLegend: false,
+    coordinates: offsetLine(IMBL_GULF_COORDS, 25 / 111),
+  },
+  {
+    name: "Danger Zone (12 km)",
+    color: "#f97316",
+    weight: 2.5,
+    opacity: 0.95,
+    dashArray: "6, 4" as string | null,
+    description: "12 km buffer — turn back immediately",
+    usedForDistance: false,
+    showInLegend: true,
+    coordinates: offsetLine(IMBL_PALK_COORDS, 12 / 111),
+  },
+  {
+    name: "Danger Zone (12 km)",
+    color: "#f97316",
+    weight: 2.5,
+    opacity: 0.95,
+    dashArray: "6, 4" as string | null,
+    description: "12 km buffer — turn back immediately",
+    usedForDistance: false,
+    showInLegend: false,
+    coordinates: offsetLine(IMBL_GULF_COORDS, 12 / 111),
   },
   {
     name: "IMBL — Palk Strait",
     color: "#ef4444",
     weight: 3,
     opacity: 1.0,
-    dashArray: "14, 6",
+    dashArray: "14, 6" as string | null,
     description: "India–Sri Lanka International Maritime Boundary (1974)",
     usedForDistance: true,
-    coordinates: [
-      [10.47, 80.12],
-      [10.22, 79.97],
-      [9.95,  79.82],
-      [9.72,  79.67],
-      [9.52,  79.57],
-      [9.35,  79.49],
-      [9.17,  79.43],
-    ] as [number, number][],
+    showInLegend: true,
+    coordinates: IMBL_PALK_COORDS,
   },
   {
     name: "IMBL — Gulf of Mannar",
     color: "#ef4444",
     weight: 3,
     opacity: 1.0,
-    dashArray: "14, 6",
+    dashArray: "14, 6" as string | null,
     description: "India–Sri Lanka International Maritime Boundary (1976)",
     usedForDistance: true,
-    coordinates: [
-      [9.17,  79.43],
-      [9.00,  79.20],
-      [8.83,  78.92],
-      [8.68,  78.62],
-      [8.53,  78.32],
-      [8.38,  78.02],
-      [8.23,  77.72],
-      [8.10,  77.46],
-    ] as [number, number][],
+    showInLegend: true,
+    coordinates: IMBL_GULF_COORDS,
   },
 ]
 
@@ -186,30 +185,6 @@ function calculateDistanceToBoundary(lat: number, lng: number): number {
   return minDistance === Infinity ? 999 : minDistance
 }
 
-// ─── Demo Mode Route (SAFE → WARNING → DANGER → back) ─────────────────────
-const DEMO_ROUTE: { lat: number; lon: number }[] = [
-  { lat: 10.60, lon: 79.20 }, // SAFE (~95 km from IMBL)
-  { lat: 10.58, lon: 79.34 }, // SAFE
-  { lat: 10.56, lon: 79.47 }, // SAFE
-  { lat: 10.54, lon: 79.58 }, // SAFE
-  { lat: 10.52, lon: 79.67 }, // SAFE
-  { lat: 10.51, lon: 79.76 }, // WARNING
-  { lat: 10.50, lon: 79.84 }, // WARNING
-  { lat: 10.50, lon: 79.91 }, // WARNING
-  { lat: 10.49, lon: 79.97 }, // WARNING
-  { lat: 10.49, lon: 80.03 }, // WARNING
-  { lat: 10.48, lon: 80.08 }, // DANGER
-  { lat: 10.48, lon: 80.12 }, // DANGER (at boundary)
-  { lat: 10.47, lon: 80.15 }, // DANGER
-  { lat: 10.47, lon: 80.17 }, // DANGER
-  { lat: 10.48, lon: 80.13 }, // DANGER (turning back)
-  { lat: 10.48, lon: 80.07 }, // DANGER
-  { lat: 10.49, lon: 80.01 }, // WARNING
-  { lat: 10.50, lon: 79.93 }, // WARNING
-  { lat: 10.51, lon: 79.82 }, // WARNING
-  { lat: 10.53, lon: 79.68 }, // SAFE
-]
-
 // Find the name of the nearest boundary line
 function findNearestBoundary(lat: number, lng: number): string {
   if (allBoundarySegments.length === 0) initBoundarySegments()
@@ -231,6 +206,41 @@ function findNearestBoundary(lat: number, lng: number): string {
   }
   return nearestName
 }
+
+// ─── Demo Mode Route (SAFE → WARNING → DANGER → back) ─────────────────────
+const DEMO_WAYPOINTS: { lat: number; lon: number }[] = [
+  { lat: 9.80,  lon: 79.10 }, // Start far west — clearly SAFE (>40 km from IMBL)
+  { lat: 9.70,  lon: 79.15 }, // Still SAFE
+  { lat: 9.60,  lon: 79.22 }, // Still SAFE
+  { lat: 9.50,  lon: 79.32 }, // Entering WARNING (~22 km)
+  { lat: 9.40,  lon: 79.40 }, // Deep WARNING (~15 km)
+  { lat: 9.30,  lon: 79.48 }, // Entering DANGER (~10 km)
+  { lat: 9.22,  lon: 79.53 }, // Deep DANGER (~5 km)
+  { lat: 9.30,  lon: 79.48 }, // Turning back
+  { lat: 9.40,  lon: 79.40 }, // WARNING again
+  { lat: 9.50,  lon: 79.32 },
+  { lat: 9.60,  lon: 79.22 }, // Back to SAFE
+  { lat: 9.70,  lon: 79.15 },
+]
+
+// Interpolate many small steps between each waypoint for smooth movement
+function buildDemoRoute(waypoints: { lat: number; lon: number }[], stepsPerSegment: number) {
+  const result: { lat: number; lon: number }[] = []
+  for (let i = 0; i < waypoints.length; i++) {
+    const from = waypoints[i]
+    const to = waypoints[(i + 1) % waypoints.length]
+    for (let s = 0; s < stepsPerSegment; s++) {
+      const t = s / stepsPerSegment
+      result.push({
+        lat: from.lat + (to.lat - from.lat) * t,
+        lon: from.lon + (to.lon - from.lon) * t,
+      })
+    }
+  }
+  return result
+}
+
+const DEMO_ROUTE = buildDemoRoute(DEMO_WAYPOINTS, 40)
 
 export default function LeafletMap({
   onLocationUpdate,
@@ -268,8 +278,8 @@ export default function LeafletMap({
       minZoom: 2,
       maxZoom: 18,
       worldCopyJump: true,
-      zoomDelta: 0.5,
-      zoomSnap: 0.5,
+      scrollWheelZoom: true,
+      wheelDebounceTime: 80,
       wheelPxPerZoomLevel: 120,
     })
 
@@ -315,16 +325,18 @@ export default function LeafletMap({
         className: "eez-tooltip",
       })
 
-      // Mid-point label
-      const mid = latLngs[Math.floor(latLngs.length / 2)]
-      L.marker(mid, {
-        icon: L.divIcon({
-          className: "eez-label",
-          html: `<div style="background:${boundary.color};color:#fff;padding:3px 9px;border-radius:5px;font-size:10px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,0.5);font-weight:600;border:1px solid rgba(255,255,255,0.3);">${boundary.name}</div>`,
-          iconSize: [160, 22],
-          iconAnchor: [80, 11],
-        }),
-      }).addTo(map)
+      // Mid-point label (only for legend-visible entries)
+      if (boundary.showInLegend) {
+        const mid = latLngs[Math.floor(latLngs.length / 2)]
+        L.marker(mid, {
+          icon: L.divIcon({
+            className: "eez-label",
+            html: `<div style="background:${boundary.color};color:#fff;padding:3px 9px;border-radius:5px;font-size:10px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,0.5);font-weight:600;border:1px solid rgba(255,255,255,0.3);">${boundary.name}</div>`,
+            iconSize: [190, 22],
+            iconAnchor: [95, 11],
+          }),
+        }).addTo(map)
+      }
     })
 
     setBoundaryCount(TN_MARITIME_BOUNDARIES.length)
@@ -336,7 +348,7 @@ export default function LeafletMap({
       div.innerHTML = `
         <div style="background:rgba(10,22,40,0.95);padding:14px;border-radius:10px;border:1px solid rgba(6,182,212,0.4);box-shadow:0 4px 25px rgba(0,0,0,0.4);backdrop-filter:blur(10px);">
           <div style="color:#06b6d4;font-weight:700;margin-bottom:10px;font-size:12px;letter-spacing:0.5px;">TAMIL NADU MARITIME LIMITS</div>
-          ${TN_MARITIME_BOUNDARIES.map(b => `
+          ${TN_MARITIME_BOUNDARIES.filter(b => b.showInLegend).map(b => `
             <div style="display:flex;align-items:center;gap:8px;margin:5px 0;">
               <div style="width:22px;height:3px;background:${b.color};border-radius:2px;${b.dashArray ? `background:repeating-linear-gradient(90deg,${b.color} 0,${b.color} 6px,transparent 6px,transparent 10px)` : ''};box-shadow:0 0 6px ${b.color};"></div>
               <div>
@@ -373,9 +385,9 @@ export default function LeafletMap({
       iconAnchor: [20, 40],
     })
 
-    // Initial position (Indian Ocean near India)
-    const initialLat = 10.76  // Nagapattinam coast
-    const initialLng = 79.84
+    // Initial position
+    const initialLat = 9.80
+    const initialLng = 79.10
     const marker = L.marker([initialLat, initialLng], { icon: vesselIcon }).addTo(map)
     marker.bindPopup("<b>Your Vessel</b><br>Live ESP32 Tracking").openPopup()
     markerRef.current = marker
@@ -578,9 +590,16 @@ export default function LeafletMap({
       onLocationUpdate(lat, lng)
       const distance = calculateDistanceToBoundary(lat, lng)
       onProximityUpdate(distance)
-      const zone = distance < 10 ? "DANGER" : distance < 28 ? "WARNING" : "SAFE"
-      onZoneUpdate?.(zone)
       onEEZUpdate?.(findNearestBoundary(lat, lng))
+
+      // Determine zone
+      if (distance < 12) {
+        onZoneUpdate?.("DANGER")
+      } else if (distance < 25) {
+        onZoneUpdate?.("WARNING")
+      } else {
+        onZoneUpdate?.("SAFE")
+      }
 
       if (lastPositionRef.current) {
         const timeDiff = (currentTime - lastPositionRef.current.time) / 1000 / 3600
@@ -592,7 +611,7 @@ export default function LeafletMap({
       }
       lastPositionRef.current = { lat, lng, time: currentTime }
       demoIndexRef.current = (demoIndexRef.current + 1) % DEMO_ROUTE.length
-    }, 1800)
+    }, 250)
 
     return () => {
       if (demoIntervalRef.current) {
@@ -603,27 +622,27 @@ export default function LeafletMap({
   }, [demoMode, onLocationUpdate, onProximityUpdate, onSpeedUpdate, onStatusUpdate, onEEZUpdate, onZoneUpdate])
 
   return (
-    <div className="relative w-full" style={{ height: '100vh', minHeight: '1080px' }}>
-      <div ref={mapRef} className="w-full" style={{ height: '100vh', minHeight: '1080px', borderRadius: '1rem' }} />
+    <div className="relative w-full h-full" style={{ minHeight: '520px' }}>
+      <div ref={mapRef} className="w-full h-full" style={{ minHeight: '520px', borderRadius: '1rem' }} />
 
       <div className="absolute top-4 left-4 z-[1000]">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium" style={{
+        <div className="flex items-center gap-3 px-5 py-3 rounded-xl text-base font-semibold" style={{
           background: "linear-gradient(135deg, rgba(10, 22, 40, 0.95) 0%, rgba(13, 33, 55, 0.9) 100%)",
           border: "1px solid rgba(6, 182, 212, 0.4)",
           boxShadow: "0 4px 20px rgba(0, 0, 0, 0.4)",
         }}>
-          <div className={`w-2.5 h-2.5 rounded-full ${isTracking ? "bg-green-400 animate-pulse" : "bg-yellow-400"}`}></div>
+          <div className={`w-3.5 h-3.5 rounded-full ${isTracking ? "bg-green-400 animate-pulse" : "bg-yellow-400"}`}></div>
           <span className="text-gray-200">{isTracking ? "Live Backend Data" : "Backend Offline"}</span>
         </div>
       </div>
 
       <div className="absolute top-4 right-4 z-[1000]">
-        <div className="px-3 py-2 rounded-lg text-xs" style={{
+        <div className="px-5 py-3 rounded-xl text-base" style={{
           background: "linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, rgba(34, 197, 94, 0.2) 100%)",
           border: "1px solid rgba(6, 182, 212, 0.5)",
           boxShadow: "0 4px 20px rgba(6, 182, 212, 0.25)",
         }}>
-          <span className="text-cyan-300 font-semibold">{boundaryCount} TN Maritime Limits</span>
+          <span className="text-cyan-300 font-bold">{boundaryCount} TN Maritime Limits</span>
         </div>
       </div>
     </div>

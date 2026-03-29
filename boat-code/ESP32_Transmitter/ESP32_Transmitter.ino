@@ -21,26 +21,32 @@
 const float DANGER_KM  = 10.0;
 const float WARNING_KM = 20.0;
 
-// Boundary coordinates (Palk Strait)
-float boundaryLats[] = {9.50, 9.70, 9.95, 10.15, 10.35};
-float boundaryLons[] = {80.30, 80.20, 80.10, 79.95, 79.80};
-int numPoints = 5;
+// IMBL boundary coordinates (Palk Strait) — matches dashboard
+float boundaryLats[] = {9.00, 9.17, 9.35, 9.52, 9.72, 9.95, 10.22, 10.47};
+float boundaryLons[] = {79.35, 79.43, 79.49, 79.57, 79.67, 79.82, 79.97, 80.12};
+int numPoints = 8;
 
-// Simulated route (15 steps: 10s Safe -> 10s Warning -> 10s Danger)
+// Simulated route — stays in open Palk Strait water (west of IMBL)
+// Steps 1-5: SAFE  |  Steps 6-9: WARNING  |  Steps 10-12: DANGER  |  Steps 13-15: returning
 float simLats[] = {
-  9.15, 9.18, 9.21, 9.24, 9.28,
-  9.33, 100, 9.37, 9.38, 9.40,
-  9.42, 9.44, 9.46, 9.48, 430
+  9.80, 9.77, 9.73, 9.70, 9.65,
+  9.60, 9.55, 9.50, 9.46, 9.42,
+  9.39, 9.38, 9.42, 9.50, 9.60
 };
 float simLons[] = {
-  80.30, 80.30, 80.30, 80.30, 80.30,
-  80.30, 80.30, 3000, 80.30, 80.30,
-  80.30, 80.30, 80.30, 789, 80.30
+  79.30, 79.32, 79.33, 79.35, 79.37,
+  79.40, 79.42, 79.44, 79.46, 79.48,
+  79.50, 79.51, 79.47, 79.42, 79.36
 };
 int simStep = 0;
 
 TinyGPSPlus gps;
 HardwareSerial gpsSerial(2);
+
+// Non-blocking blink state (matches receiver)
+unsigned long lastBlinkTime = 0;
+bool ledState = false;
+String currentZone = "SAFE";
 
 // Calculate real-world distance
 float haversineDistance(float lat1, float lon1, float lat2, float lon2) {
@@ -61,17 +67,27 @@ float distanceToBoundary(float curLat, float curLon) {
   return minDist;
 }
 
-// Hardware Alerts (LED and Buzzer)
-void updateAlert(float dist) {
-  if (dist > WARNING_KM) {
-    digitalWrite(LED_PIN, LOW);
-    noTone(BUZZER_PIN);
-  } else if (dist > DANGER_KM) {
-    digitalWrite(LED_PIN, (millis() / 500) % 2); // Blinking logic
-    noTone(BUZZER_PIN);
-  } else {
+// Hardware Alerts — matches receiver updateHardware() exactly
+void updateAlert() {
+  unsigned long now = millis();
+
+  if (currentZone == "DANGER") {
     digitalWrite(LED_PIN, HIGH);
-    tone(BUZZER_PIN, 1000);
+    digitalWrite(BUZZER_PIN, HIGH);
+    ledState = true;
+
+  } else if (currentZone == "WARNING") {
+    digitalWrite(BUZZER_PIN, LOW);
+    if (now - lastBlinkTime >= 500) {
+      lastBlinkTime = now;
+      ledState = !ledState;
+      digitalWrite(LED_PIN, ledState ? HIGH : LOW);
+    }
+
+  } else {
+    digitalWrite(LED_PIN, LOW);
+    digitalWrite(BUZZER_PIN, LOW);
+    ledState = false;
   }
 }
 
@@ -112,9 +128,10 @@ void loop() {
   }
   
   float dist = distanceToBoundary(currentLat, currentLon);
-  updateAlert(dist);
+  currentZone = (dist > WARNING_KM) ? "SAFE" : (dist > DANGER_KM) ? "WARNING" : "DANGER";
+  updateAlert();
   
-  String zone = (dist > WARNING_KM) ? "SAFE" : (dist > DANGER_KM) ? "WARNING" : "DANGER";
+  String zone = currentZone;
   
   Serial.printf("Lat: %.4f | Lon: %.4f | Dist: %.2fkm | Zone: %s\n", currentLat, currentLon, dist, zone.c_str());
   
@@ -123,10 +140,10 @@ void loop() {
   LoRa.printf("BOAT1,%.4f,%.4f,%.2f,%s", currentLat, currentLon, dist, zone.c_str());
   LoRa.endPacket();
   
-  // Smart wait: Keeps the LED blinking while delaying the next packet by 2 seconds
+  // Smart wait: keeps LED/buzzer updating while waiting 2s for next packet
   unsigned long waitStart = millis();
   while (millis() - waitStart < 2000) {
-    updateAlert(dist);
+    updateAlert();
     delay(20); 
   }
 }
